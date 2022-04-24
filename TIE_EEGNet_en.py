@@ -1,5 +1,5 @@
 import torch.nn as nn
-from models.EnkLayer_en import EnkLayer_ensemble
+from TIE_Layer_en import TIE_Layer
 import torch
 import my_config
 GPU_ID = my_config.Config.GPU_id
@@ -13,7 +13,7 @@ class Conv2dWithConstraint(nn.Conv2d):
         self.weight.data = torch.renorm(self.weight.data, p=2, dim=0, maxnorm=self.max_norm)
         return super(Conv2dWithConstraint, self).forward(x)
 
-class Enk_EEGNet(nn.Module):
+class Tie_EEGNet(nn.Module):
     def CalculateOutSize(self, model, channels, samples):
         data = torch.rand(1,1,channels, samples)
         model.eval()
@@ -28,8 +28,8 @@ class Enk_EEGNet(nn.Module):
 
     def __init__(self, alpha_list, alpha=2, n_class = 4, channels = 20, samples = 512, dropoutRate = 0.5,
                  kernel_length = 64, kernel_length2 = 16, F1 = 8, F2 = 16, D = 2,
-                 Enk = 'sinusodial', isTrain= True, pool='Avg'):
-        super(Enk_EEGNet, self).__init__()
+                 tie = 'sinusoidal', isTrain= True, pool='Avg'):
+        super(Tie_EEGNet, self).__init__()
         self.F1 = F1
         self.F2 = F2
         self.D = D
@@ -39,17 +39,15 @@ class Enk_EEGNet(nn.Module):
         self.dropoutRate = dropoutRate
         self.kernel_length = kernel_length
         self.kernel_length2 = kernel_length2
-        self.Enk = Enk
+        self.tie = tie
         self.isTrain = isTrain
         self.alpha_list=alpha_list
         self.alpha=alpha
         self.pool = pool
 
-
-        #self.Conv2d_1 = nn.Conv2d(1, self.F1, (1, self.kernel_length), padding='same', bias = False)#(padding =(1, self.kernel_size //2))
         self.Conv2d_1 = nn.Conv2d(1, self.F1, (1, self.kernel_length), padding=(0, self.kernel_length // 2), bias = False)#'same'
 
-        self.Enk_Layer = EnkLayer_ensemble(pool= self.pool, alpha_list=self.alpha_list, Enk= self.Enk, conv2Doutput= self.Conv2d_1, inc = 1, outc = self.F1,
+        self.TIE_Layer = TIE_Layer(pool= self.pool, alpha_list=self.alpha_list, tie= self.tie, conv2Doutput= self.Conv2d_1, inc = 1, outc = self.F1,
                                   kernel_size = (1, self.kernel_length), pad=(0, self.kernel_length // 2), stride = 1, bias = False,
                                   sample_len= self.samples,is_Train=self.isTrain,alpha=self.alpha)
         self.BatchNorm_1_1 = nn.BatchNorm2d(self.F1, momentum=0.01, affine=True, eps = 1e-3)
